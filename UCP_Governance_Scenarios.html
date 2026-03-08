@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UCP Governance — Rule Engine Scenario Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #080c14;
+  --surface: #0d1320;
+  --surface2: #111927;
+  --border: #1a2540;
+  --border2: #243050;
+  --text: #c8d6ef;
+  --text-dim: #5a7299;
+  --text-bright: #e8f0ff;
+  --accent: #3b8eea;
+  --green: #34c771;
+  --green-bg: #061a0e;
+  --green-border: #0d3a1e;
+  --red: #f05252;
+  --red-bg: #160508;
+  --red-border: #3a0c10;
+  --amber: #f0a030;
+  --amber-bg: #160d02;
+  --amber-border: #3a2206;
+  --orange: #f06830;
+  --orange-bg: #160802;
+  --blue: #3b8eea;
+  --blue-bg: #050f1e;
+  --blue-border: #0d2040;
+  --purple: #9b6fe8;
+  --purple-bg: #0f0820;
+  --purple-border: #261655;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'DM Sans', 'Segoe UI', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+/* ── Topbar ── */
+.topbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 0 24px; height: 54px; display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; z-index: 10;
+}
+.topbar-brand { display: flex; align-items: center; gap: 12px; }
+.topbar-logo { width: 28px; height: 28px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 700; color: #fff; }
+.topbar-title { font-size: 14px; font-weight: 600; color: var(--text-bright); }
+.topbar-sub { font-size: 12px; color: var(--text-dim); margin-left: 12px; }
+.topbar-right { font-size: 11px; color: var(--text-dim); font-family: var(--mono); letter-spacing: 0.5px; }
+
+/* ── Layout ── */
+.layout { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Sidebar ── */
+.sidebar { width: 288px; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; padding: 12px 0 24px; }
+.sidebar::-webkit-scrollbar { width: 4px; } 
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.sidebar-section { padding: 16px 16px 4px; }
+.sidebar-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); font-family: var(--mono); }
+
+.nav-item { padding: 8px 16px; cursor: pointer; display: flex; align-items: flex-start; gap: 10px; border-left: 2px solid transparent; transition: all 0.15s; }
+.nav-item:hover { background: var(--surface2); }
+.nav-item.active { background: rgba(59,142,234,0.07); border-left-color: var(--accent); }
+.nav-item-id { font-size: 10px; font-family: var(--mono); color: var(--text-dim); min-width: 28px; padding-top: 1px; font-weight: 700; }
+.nav-item-body { flex: 1; min-width: 0; }
+.nav-item-title { font-size: 12px; color: var(--text); font-weight: 500; line-height: 1.4; }
+.nav-item-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 3px; margin-top: 3px; font-family: var(--mono); }
+.t-sent { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+.t-terminal { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+.t-flush { background: #16100a; color: #c87040; border: 1px solid #3a2010; }
+.t-queue-sent { background: #061420; color: #60a8e8; border: 1px solid #0d2840; }
+.t-override { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
+.t-bypass { background: #0a0e1e; color: #7090e0; border: 1px solid #1a2850; }
+
+/* ── Content ── */
+.content { flex: 1; overflow-y: auto; padding: 28px 32px; }
+.content::-webkit-scrollbar { width: 6px; }
+.content::-webkit-scrollbar-track { background: transparent; }
+.content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ── Scenario Header ── */
+.scenario-head { margin-bottom: 24px; }
+.scenario-eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.scenario-id { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--text-dim); }
+.scenario-title { font-size: 24px; font-weight: 700; color: var(--text-bright); line-height: 1.25; }
+.scenario-subtitle { font-size: 14px; color: var(--text-dim); margin-top: 4px; }
+
+/* ── Context grid ── */
+.ctx-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 22px; }
+.ctx-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 7px 12px; }
+.ctx-chip-label { font-size: 10px; font-family: var(--mono); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.3px; }
+.ctx-chip-value { font-size: 13px; color: var(--text-bright); font-weight: 600; margin-top: 2px; }
+
+/* ── State section ── */
+.section-header { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); font-family: var(--mono); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.section-header::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 7px; margin-bottom: 22px; }
+.state-row { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 7px 11px; display: flex; align-items: flex-start; gap: 8px; }
+.state-dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.d-ok { background: var(--green); }
+.d-bad { background: var(--red); }
+.d-warn { background: var(--amber); }
+.d-info { background: var(--accent); }
+.state-text { flex: 1; }
+.state-label { font-size: 10px; color: var(--text-dim); font-family: var(--mono); }
+.state-value { font-size: 12px; color: var(--text); font-weight: 500; margin-top: 1px; }
+
+/* ── Pipeline ── */
+.pipeline-wrap { margin-bottom: 22px; }
+.pipeline-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pipeline-table thead th { padding: 6px 10px; background: var(--surface); border: 1px solid var(--border); font-size: 10px; font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); text-align: left; }
+.pipeline-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+.pipeline-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+.pipeline-table td { padding: 7px 10px; border-right: 1px solid var(--border); vertical-align: top; }
+
+/* Row states */
+tr.row-pass { }
+tr.row-terminal { background: var(--red-bg); }
+tr.row-defer { background: var(--amber-bg); }
+tr.row-skip { opacity: 0.32; }
+tr.row-send { background: var(--green-bg); }
+
+.step-num { font-family: var(--mono); font-size: 11px; color: var(--text-dim); font-weight: 700; white-space: nowrap; }
+.bucket-badge { display: inline-block; font-family: var(--mono); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; white-space: nowrap; }
+.bk-b1 { background: var(--blue-bg); color: #60a8e8; border: 1px solid var(--blue-border); }
+.bk-b2 { background: #060f06; color: #50c870; border: 1px solid #0a2010; }
+.bk-b3 { background: #120900; color: #e09830; border: 1px solid #302000; }
+.bk-b4 { background: var(--purple-bg); color: #b090f0; border: 1px solid var(--purple-border); }
+.bk-b5 { background: var(--red-bg); color: #e07070; border: 1px solid var(--red-border); }
+
+.rule-name { color: var(--text); font-weight: 500; }
+.rule-note { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.check-value { font-size: 11px; color: var(--text-dim); font-family: var(--mono); }
+.check-note { font-size: 11px; color: var(--text-dim); margin-top: 2px; font-style: italic; }
+
+.result-badge { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
+.rb-pass { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+.rb-terminal { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+.rb-defer { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+.rb-skip { background: var(--surface2); color: var(--border2); border: 1px solid var(--border); }
+.rb-send { background: var(--green-bg); color: #50e890; border: 1px solid var(--green-border); }
+.rb-override { background: var(--purple-bg); color: var(--purple); border: 1px solid var(--purple-border); }
+
+.send-row td { color: var(--green); font-weight: 600; }
+
+/* ── Queue Lifecycle ── */
+.queue-section { background: var(--surface); border: 1px solid var(--border2); border-radius: 10px; padding: 18px 20px; margin-bottom: 22px; }
+.queue-section-title { font-size: 11px; font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--amber); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.queue-section-title::after { content:''; flex:1; height:1px; background: var(--amber-border); }
+
+.queue-timeline { display: flex; flex-direction: column; }
+.q-event { display: flex; gap: 0; }
+.q-connector { width: 32px; display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.q-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.q-line { width: 2px; flex: 1; min-height: 16px; }
+.q-body { flex: 1; padding-bottom: 18px; padding-left: 10px; }
+.q-time { font-size: 10px; font-family: var(--mono); font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 3px; }
+.q-title { font-size: 13px; font-weight: 600; color: var(--text-bright); }
+.q-desc { font-size: 12px; color: var(--text-dim); margin-top: 4px; line-height: 1.6; }
+.q-code { display: block; font-family: var(--mono); font-size: 11px; background: var(--bg); border: 1px solid var(--border2); border-radius: 4px; padding: 7px 10px; margin-top: 8px; color: #60a8e8; line-height: 1.8; white-space: pre; }
+.q-alert { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 3px; margin-top: 6px; font-family: var(--mono); }
+.qa-flush { background: #16100a; color: #e07030; border: 1px solid #3a2010; }
+.qa-terminal { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+.qa-send { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+.qa-event { background: #0e1020; color: #7090d0; border: 1px solid #182040; }
+
+.qdot-queue { background: var(--amber); }
+.qdot-event { background: var(--accent); }
+.qdot-reeval { background: #8060e0; }
+.qdot-flush { background: #e07030; }
+.qdot-terminal { background: var(--red); }
+.qdot-send { background: var(--green); }
+.qdot-ttl { background: #e07030; }
+.qline-amber { background: var(--amber-border); }
+.qline-blue { background: var(--blue-border); }
+.qline-purple { background: #261655; }
+.qline-red { background: var(--red-border); }
+.qline-green { background: var(--green-border); }
+.qline-dim { background: var(--border); }
+
+/* ── TS Dual Outcome ── */
+.dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 22px; }
+.dual-card { border-radius: 8px; padding: 16px 18px; }
+.dual-on { background: var(--purple-bg); border: 1px solid var(--purple-border); }
+.dual-off { background: #020f14; border: 1px solid var(--blue-border); }
+.dual-header { font-size: 12px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; font-family: var(--mono); }
+.dual-on .dual-header { color: var(--purple); }
+.dual-off .dual-header { color: var(--accent); }
+.dual-body { font-size: 12px; color: var(--text-dim); line-height: 1.7; }
+.dual-body strong { color: var(--text); }
+.dual-code { font-family: var(--mono); font-size: 11px; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 3px; }
+
+/* ── Outcome ── */
+.outcome-box { border-radius: 10px; padding: 16px 20px; margin-bottom: 22px; }
+.oc-send { background: var(--green-bg); border: 1px solid var(--green-border); }
+.oc-terminal { background: var(--red-bg); border: 1px solid var(--red-border); }
+.oc-flush { background: #100c06; border: 1px solid #3a2510; }
+.oc-bypass { background: var(--blue-bg); border: 1px solid var(--blue-border); }
+.outcome-top { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+.outcome-icon { font-size: 26px; line-height: 1; }
+.outcome-type { font-size: 16px; font-weight: 700; font-family: var(--mono); }
+.oc-send .outcome-type { color: var(--green); }
+.oc-terminal .outcome-type { color: var(--red); }
+.oc-flush .outcome-type { color: #e07030; }
+.oc-bypass .outcome-type { color: var(--accent); }
+.outcome-code { font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 3px; background: rgba(0,0,0,0.35); color: var(--text-dim); margin-left: 4px; }
+.outcome-desc { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
+.outcome-desc strong { color: var(--text); }
+
+/* ── Callout ── */
+.callout { border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-size: 12px; line-height: 1.6; }
+.co-info { background: var(--blue-bg); border-left: 3px solid var(--accent); color: #80b8e8; }
+.co-warn { background: var(--amber-bg); border-left: 3px solid var(--amber); color: #c08020; }
+.co-rule { background: var(--surface2); border-left: 3px solid var(--border2); color: var(--text-dim); font-family: var(--mono); font-size: 11px; }
+
+/* ── Pipeline reference panel ── */
+.ref-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 22px; overflow: hidden; }
+.ref-panel-header { padding: 12px 18px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; }
+.ref-panel-header:hover { background: var(--surface2); }
+.ref-panel-title { font-size: 12px; font-family: var(--mono); font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.ref-chevron { color: var(--text-dim); transition: transform 0.2s; font-size: 12px; }
+.ref-chevron.open { transform: rotate(180deg); }
+.ref-content { display: none; border-top: 1px solid var(--border); }
+.ref-content.open { display: block; }
+.ref-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.ref-table th { padding: 6px 10px; background: var(--bg); font-family: var(--mono); font-size: 10px; color: var(--text-dim); text-align: left; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+.ref-table td { padding: 5px 10px; border-bottom: 1px solid var(--border); color: var(--text-dim); vertical-align: middle; }
+.ref-table tr:hover td { background: rgba(255,255,255,0.02); }
+.ref-overridable { font-family: var(--mono); font-size: 10px; color: var(--amber); }
+.ref-hard { font-family: var(--mono); font-size: 10px; color: var(--red); }
+
+/* ── Transactional banner ── */
+.txn-bypass-banner { background: var(--blue-bg); border: 1px solid var(--blue-border); border-radius: 10px; padding: 20px 24px; margin-bottom: 22px; text-align: center; }
+.txn-bypass-icon { font-size: 36px; margin-bottom: 8px; }
+.txn-bypass-title { font-size: 18px; font-weight: 700; color: #80b0f0; font-family: var(--mono); }
+.txn-bypass-desc { font-size: 13px; color: var(--text-dim); margin-top: 6px; line-height: 1.7; }
+
+@media (max-width: 900px) {
+  .sidebar { width: 220px; }
+  .dual-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .layout { flex-direction: column; }
+  .sidebar { width: 100%; max-height: 180px; flex-direction: row; overflow-x: auto; overflow-y: hidden; display: flex; padding: 8px; }
+  .sidebar-section { display: none; }
+  .nav-item { flex-shrink: 0; width: auto; padding: 6px 12px; border-left: none; border-bottom: 2px solid transparent; }
+  .nav-item.active { border-left: none; border-bottom-color: var(--accent); }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">UCP</div>
+    <span class="topbar-title">Governance Rule Engine</span>
+    <span class="topbar-sub">Exhaustive Scenario Reference · v8 Pipeline · 18 Steps</span>
+  </div>
+  <div class="topbar-right">18 SCENARIOS · ALL RULES COVERED</div>
+</div>
+
+<div class="layout">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="content" id="content"></div>
+</div>
+
+<script>
+// ── Pipeline Step Definitions ───────────────────────────────────────────────
+const STEPS = [
+  {n:1,  bk:'B5', rule:'Retail Suppression List',                    type:'terminal', ov:false},
+  {n:2,  bk:'B4', rule:'Format Suppression List',                   type:'terminal', ov:false},
+  {n:3,  bk:'B4', rule:'Marketing Consent / Opt-in',                type:'terminal', ov:false},
+  {n:4,  bk:'B3', rule:'Reachability',                               type:'terminal', ov:false},
+  {n:5,  bk:'B3', rule:'Channel Unsubscribe',                        type:'terminal', ov:false},
+  {n:6,  bk:'B3', rule:'Max Msgs / Customer / Day (Format)',         type:'defer',    ov:false},
+  {n:7,  bk:'B3', rule:'Max Msgs / Customer / Week (Format)',        type:'defer',    ov:false},
+  {n:8,  bk:'B3', rule:'Max Msgs / Customer / Month (Format)',       type:'defer',    ov:false},
+  {n:9,  bk:'B2', rule:'Max Msgs / Customer / Day (Retail)',         type:'defer',    ov:false},
+  {n:10, bk:'B2', rule:'Max Msgs / Customer / Week (Retail)',        type:'defer',    ov:false},
+  {n:11, bk:'B2', rule:'Max Msgs / Customer / Month (Retail)',       type:'defer',    ov:false},
+  {n:12, bk:'B1', rule:'Quiet Time',                                  type:'defer',    ov:true},
+  {n:13, bk:'B3', rule:'Format Cooldown',                             type:'defer',    ov:true},
+  {n:14, bk:'B2', rule:'Cross-Format Channel Cooldown',               type:'defer',    ov:true},
+  {n:15, bk:'B5', rule:'Global Cross-Channel Cooldown',               type:'defer',    ov:true},
+  {n:16, bk:'B1', rule:'Volume Cap / Day (Format)',                   type:'defer',    ov:false},
+  {n:17, bk:'B1', rule:'Volume Cap / Week (Format)',                  type:'defer',    ov:false},
+  {n:18, bk:'B1', rule:'Volume Cap / Month (Format)',                 type:'defer',    ov:false},
+];
+
+// ── Scenario Data ──────────────────────────────────────────────────────────
+const SCENARIOS = [
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S01', title:'Clean Send — All 18 Steps Pass',
+  subtitle:'Happy path: every gate clears, message dispatched immediately.',
+  tag:'t-sent', tagLabel:'SENT',
+  ctx:[
+    {label:'Customer', value:'Meera'}, {label:'Format', value:'Tira'},
+    {label:'Channel', value:'SMS'}, {label:'Campaign', value:'New Arrivals'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Monday · 10:00 AM'},
+    {label:'Time Sensitive', value:'OFF (default)'},
+  ],
+  state:[
+    {d:'d-ok', l:'Retail Suppression', v:'Not on suppression list'},
+    {d:'d-ok', l:'Format Suppression (Tira)', v:'Not on Tira suppression list'},
+    {d:'d-ok', l:'Marketing Consent', v:'Active — given to Tira'},
+    {d:'d-ok', l:'Reachability (SMS)', v:'Valid mobile number on file'},
+    {d:'d-ok', l:'Channel Unsubscribe', v:'No STOP received for Tira SMS'},
+    {d:'d-ok', l:'B3 Format Day Cap (SMS)', v:'0 / 1 today — 1 remaining'},
+    {d:'d-ok', l:'B3 Format Week Cap (SMS)', v:'0 / 2 this week — 2 remaining'},
+    {d:'d-ok', l:'B3 Format Month Cap (SMS)', v:'0 / 5 this month — 5 remaining'},
+    {d:'d-ok', l:'B2 Retail Day Cap (SMS)', v:'0 / 2 all formats today — 2 remaining'},
+    {d:'d-ok', l:'B2 Retail Week Cap (SMS)', v:'0 / 6 all formats this week'},
+    {d:'d-ok', l:'B2 Retail Month Cap (SMS)', v:'0 / 12 all formats this month'},
+    {d:'d-ok', l:'Quiet Time', v:'10:00 AM — outside 9PM–9AM window'},
+    {d:'d-ok', l:'Format Cooldown (Tira SMS)', v:'No Tira SMS in last 24h'},
+    {d:'d-ok', l:'Cross-Format Cooldown', v:'No SMS from any format in last 30 min'},
+    {d:'d-ok', l:'Global Cross-Channel Cooldown', v:'No send on any channel in last 30 min'},
+    {d:'d-ok', l:'B1 Vol Cap / Day', v:'Tira sent 0 / 1,000,000 SMS today'},
+    {d:'d-ok', l:'B1 Vol Cap / Week', v:'Tira at 0 / 4,000,000 SMS this week'},
+    {d:'d-ok', l:'B1 Vol Cap / Month', v:'Tira at 0 / 10,000,000 SMS this month'},
+  ],
+  steps:[
+    {n:1, r:'pass', v:'Not on retail suppression list'},
+    {n:2, r:'pass', v:'Not on Tira format suppression list'},
+    {n:3, r:'pass', v:'Marketing consent active for Tira'},
+    {n:4, r:'pass', v:'Valid mobile: +91 9XXXXXXXXX'},
+    {n:5, r:'pass', v:'No STOP on record — Tira SMS'},
+    {n:6, r:'pass', v:'0/1 format SMS today — 1 slot available'},
+    {n:7, r:'pass', v:'0/2 format SMS this week — 2 slots available'},
+    {n:8, r:'pass', v:'0/5 format SMS this month — 5 slots available'},
+    {n:9, r:'pass', v:'0/2 retail SMS today (all formats) — 2 slots available'},
+    {n:10,r:'pass', v:'0/6 retail SMS this week — 6 slots available'},
+    {n:11,r:'pass', v:'0/12 retail SMS this month — 12 slots available'},
+    {n:12,r:'pass', v:'10:00 AM — outside quiet window 9PM–9AM'},
+    {n:13,r:'pass', v:'No Tira SMS in last 24h — cooldown inactive'},
+    {n:14,r:'pass', v:'No SMS from any format in last 30 min'},
+    {n:15,r:'pass', v:'No send on any channel in last 30 min'},
+    {n:16,r:'pass', v:'Tira daily vol: 0 / 1,000,000'},
+    {n:17,r:'pass', v:'Tira weekly vol: 0 / 4,000,000'},
+    {n:18,r:'pass', v:'Tira monthly vol: 0 / 10,000,000'},
+  ],
+  queue:null, dual:null,
+  outcome:{cls:'oc-send', icon:'✓', type:'MESSAGE SENT', code:'DISPATCHED',
+    desc:'All 18 steps passed. Message dispatched to Meera at 10:00 AM. Post-send state changes: <strong>B3 Format Cooldown</strong> (Tira × SMS × Meera) active for 24h · <strong>B2 Cross-Format Channel Cooldown</strong> (SMS × Meera) active for 30 min · <strong>B5 Global Cooldown</strong> (any channel × Meera) active for 30 min. B3 day/week/month counters incremented to 1/1, 1/2, 1/5. B2 retail counters incremented to 1/2, 1/6, 1/12.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S02', title:'Terminal — Retail Suppression (Step 1)',
+  subtitle:'Customer is on Reliance Retail\'s global suppression list. Evaluation ends immediately — no further checks.',
+  tag:'t-terminal', tagLabel:'TERMINAL',
+  ctx:[
+    {label:'Customer', value:'Ramesh'}, {label:'Format', value:'JioMart'},
+    {label:'Channel', value:'SMS'}, {label:'Campaign', value:'Weekend Deals'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Tuesday · 11:00 AM'},
+  ],
+  state:[
+    {d:'d-bad', l:'Retail Suppression', v:'ON RETAIL SUPPRESSION LIST — hard block'},
+    {d:'d-info', l:'All other checks', v:'Never evaluated after Step 1 fails'},
+  ],
+  steps:[
+    {n:1, r:'terminal', v:'Found on Retail Suppression List', note:'Global block — no campaign from any format on any channel can reach this customer'},
+    ...Array.from({length:17},(_,i)=>({n:i+2, r:'skip', v:'Not evaluated'})),
+  ],
+  queue:null, dual:null,
+  outcome:{cls:'oc-terminal', icon:'✗', type:'TERMINAL BLOCK', code:'RETAIL_SUPPRESSION',
+    desc:'Ramesh is on the <strong>Retail-wide suppression list</strong>. This is the broadest possible block in the system — it applies across all 200 formats, all channels, and all campaigns without exception. Evaluation stops at Step 1. No queue entry is created. The Time Sensitive Override has zero effect on this rule.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S03', title:'Terminal — Format Suppression (Step 2)',
+  subtitle:'Customer passes Retail check but is on Ajio\'s format-level suppression list (regulatory/complaint-driven).',
+  tag:'t-terminal', tagLabel:'TERMINAL',
+  ctx:[
+    {label:'Customer', value:'Preethi'}, {label:'Format', value:'Ajio'},
+    {label:'Channel', value:'RCS'}, {label:'Campaign', value:'Season Sale'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Wednesday · 2:00 PM'},
+  ],
+  state:[
+    {d:'d-ok', l:'Retail Suppression', v:'Not on retail suppression list'},
+    {d:'d-bad', l:'Format Suppression (Ajio)', v:'ON AJIO SUPPRESSION LIST — hard block'},
+    {d:'d-info', l:'Steps 3–18', v:'Never evaluated'},
+  ],
+  steps:[
+    {n:1, r:'pass', v:'Not on retail suppression list'},
+    {n:2, r:'terminal', v:'Found on Ajio format suppression list', note:'Format suppression: typically regulatory, complaint, or legal-driven. Evaluated before consent — suppression overrides any existing consent signal.'},
+    ...Array.from({length:16},(_,i)=>({n:i+3, r:'skip', v:'Not evaluated'})),
+  ],
+  queue:null, dual:null,
+  outcome:{cls:'oc-terminal', icon:'✗', type:'TERMINAL BLOCK', code:'FORMAT_SUPPRESSION',
+    desc:'Preethi is suppressed at <strong>Ajio\'s format level</strong>. This is typically driven by a customer complaint, regulatory requirement, or legal obligation. Evaluation stops at Step 2. Even if Preethi has valid marketing consent for Ajio, suppression overrides it in severity and authority. She can still receive messages from other formats (JioMart, Tira etc.) unless also suppressed there.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S04', title:'Terminal — Marketing Consent Absent (Step 3)',
+  subtitle:'Customer has not given marketing consent to this format. No consent = no promotional messages, full stop.',
+  tag:'t-terminal', tagLabel:'TERMINAL',
+  ctx:[
+    {label:'Customer', value:'Arjun'}, {label:'Format', value:'Hamleys'},
+    {label:'Channel', value:'Email'}, {label:'Campaign', value:'Toy Fair Launch'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Friday · 3:00 PM'},
+  ],
+  state:[
+    {d:'d-ok', l:'Retail Suppression', v:'Not on retail suppression list'},
+    {d:'d-ok', l:'Format Suppression (Hamleys)', v:'Not on Hamleys suppression list'},
+    {d:'d-bad', l:'Marketing Consent (Hamleys)', v:'NO CONSENT ON FILE — hard block'},
+    {d:'d-info', l:'Steps 4–18', v:'Never evaluated'},
+  ],
+  steps:[
+    {n:1, r:'pass', v:'Not on retail suppression list'},
+    {n:2, r:'pass', v:'Not on Hamleys format suppression list'},
+    {n:3, r:'terminal', v:'Marketing consent absent for Hamleys', note:'Single consent covers all channels for this format. No consent = no promotional messages regardless of channel.'},
+    ...Array.from({length:15},(_,i)=>({n:i+4, r:'skip', v:'Not evaluated'})),
+  ],
+  queue:null, dual:null,
+  outcome:{cls:'oc-terminal', icon:'✗', type:'TERMINAL BLOCK', code:'CONSENT_ABSENT',
+    desc:'Arjun has not given marketing consent to <strong>Hamleys</strong>. A single consent record covers all channels for a format — it is not channel-specific. Without active consent, no promotional message can be sent regardless of which channel is attempted. This block is not time-based and cannot be resolved by waiting. No queue entry is created.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S05', title:'Terminal — Reachability Fail (Step 4)',
+  subtitle:'Customer has no valid push token for this format app. Physical delivery is impossible — cap and consent checks are moot.',
+  tag:'t-terminal', tagLabel:'TERMINAL',
+  ctx:[
+    {label:'Customer', value:'Sunita'}, {label:'Format', value:'Reliance Digital'},
+    {label:'Channel', value:'Push Notification'}, {label:'Campaign', value:'New Arrivals'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Thursday · 5:00 PM'},
+  ],
+  state:[
+    {d:'d-ok', l:'Retail Suppression', v:'Not suppressed'},
+    {d:'d-ok', l:'Format Suppression (Rel. Digital)', v:'Not suppressed'},
+    {d:'d-ok', l:'Marketing Consent', v:'Active — Reliance Digital'},
+    {d:'d-bad', l:'Reachability (Push)', v:'NO PUSH TOKEN — app not installed / permission not granted'},
+    {d:'d-info', l:'Steps 5–18', v:'Never evaluated'},
+  ],
+  steps:[
+    {n:1, r:'pass', v:'Not on retail suppression list'},
+    {n:2, r:'pass', v:'Not on Reliance Digital suppression list'},
+    {n:3, r:'pass', v:'Marketing consent active for Reliance Digital'},
+    {n:4, r:'terminal', v:'No push token found for Reliance Digital app', note:'Push token is per-format-app, not global. Sunita has not installed the app or has not granted notification permission. Physical delivery is impossible.'},
+    ...Array.from({length:14},(_,i)=>({n:i+5, r:'skip', v:'Not evaluated'})),
+  ],
+  queue:null, dual:null,
+  outcome:{cls:'oc-terminal', icon:'✗', type:'TERMINAL BLOCK', code:'NO_PUSH_TOKEN',
+    desc:'Sunita has no valid push token for the <strong>Reliance Digital</strong> app. Push is an opt-in channel — a token is only created when the customer installs the app and grants notification permission. No token = no delivery possible. This is not a timing issue; waiting will not resolve it. No queue entry is created. <strong>Note:</strong> Push token is per-format-app — Sunita may have push tokens for JioMart or Ajio apps separately.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S06', title:'Terminal — Channel Unsubscribed (Step 5)',
+  subtitle:'Customer sent STOP to this format\'s WhatsApp handle. Active opt-out blocks all further promotional sends on this channel.',
+  tag:'t-terminal', tagLabel:'TERMINAL',
+  ctx:[
+    {label:'Customer', value:'Deepak'}, {label:'Format', value:'Smart Bazaar'},
+    {label:'Channel', value:'WhatsApp'}, {label:'Campaign', value:'Monthly Offers'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Saturday · 9:30 AM'},
+  ],
+  state:[
+    {d:'d-ok', l:'Retail Suppression', v:'Not suppressed'},
+    {d:'d-ok', l:'Format Suppression (Smart Bazaar)', v:'Not suppressed'},
+    {d:'d-ok', l:'Marketing Consent', v:'Active — Smart Bazaar'},
+    {d:'d-ok', l:'Reachability', v:'Valid mobile number'},
+    {d:'d-bad', l:'Channel Unsubscribe (WhatsApp)', v:'STOP received — unsubscribed from Smart Bazaar WhatsApp'},
+    {d:'d-info', l:'Steps 6–18', v:'Never evaluated'},
+  ],
+  steps:[
+    {n:1, r:'pass', v:'Not on retail suppression list'},
+    {n:2, r:'pass', v:'Not on Smart Bazaar suppression list'},
+    {n:3, r:'pass', v:'Marketing consent active for Smart Bazaar'},
+    {n:4, r:'pass', v:'Valid mobile number present'},
+    {n:5, r:'terminal', v:'STOP reply received on Smart Bazaar WhatsApp handle', note:'WhatsApp uses opt-out model. Customer opted out by replying STOP. Cannot be resolved by waiting — this is an active preference, not a timing issue.'},
+    ...Array.from({length:13},(_,i)=>({n:i+6, r:'skip', v:'Not evaluated'})),
+  ],
+  queue:null, dual:null,
+  outcome:{cls:'oc-terminal', icon:'✗', type:'TERMINAL BLOCK', code:'CHANNEL_UNSUB',
+    desc:'Deepak has opted out of Smart Bazaar\'s <strong>WhatsApp</strong> channel by replying STOP. WhatsApp, SMS, and RCS all use the opt-out model — customers are reachable by default but can unsubscribe at any time. The unsubscribe is channel-specific: Deepak can still receive SMS from Smart Bazaar if he hasn\'t sent STOP on that channel. No queue entry is created. The Time Sensitive Override has zero effect on this rule.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S07', title:'B3 Format Day Cap → Queue → Delivered',
+  subtitle:'Daily cap exhausted at T₀. Queue entry created with quiet-hours-aware next_eval. Full re-evaluation next morning — all 18 steps pass. Message sent.',
+  tag:'t-queue-sent', tagLabel:'QUEUE → SENT',
+  ctx:[
+    {label:'Customer', value:'Kavya'}, {label:'Format', value:'JioMart'},
+    {label:'Channel', value:'SMS'}, {label:'Campaign', value:'Fresh Produce Sale'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Monday · 3:00 PM'},
+    {label:'Time Sensitive', value:'OFF (default)'},
+  ],
+  state:[
+    {d:'d-ok', l:'Retail Suppression', v:'Not suppressed'},
+    {d:'d-ok', l:'Format Suppression', v:'Not suppressed'},
+    {d:'d-ok', l:'Marketing Consent', v:'Active — JioMart'},
+    {d:'d-ok', l:'Reachability', v:'Valid mobile number'},
+    {d:'d-ok', l:'Channel Unsubscribe', v:'Not unsubscribed from JioMart SMS'},
+    {d:'d-bad', l:'B3 Format Day Cap (SMS)', v:'1 / 1 JioMart SMS today — CAP EXHAUSTED'},
+    {d:'d-ok', l:'Format Cooldown (JioMart SMS)', v:'Last JioMart SMS: Mon 3:00 PM (right now = T₀)'},
+    {d:'d-ok', l:'B2 Retail Day Cap', v:'1 / 2 all formats today — 1 remaining'},
+    {d:'d-ok', l:'Quiet Time', v:'3:00 PM — outside window'},
+    {d:'d-ok', l:'B1 Vol Cap', v:'JioMart well within daily limit'},
+  ],
+  steps:[
+    {n:1, r:'pass', v:'Not on retail suppression list'},
+    {n:2, r:'pass', v:'Not on JioMart suppression list'},
+    {n:3, r:'pass', v:'Consent active for JioMart'},
+    {n:4, r:'pass', v:'Valid mobile number'},
+    {n:5, r:'pass', v:'Not unsubscribed'},
+    {n:6, r:'defer', v:'1/1 JioMart SMS today — daily cap exhausted', note:'Daily cap: 1 SMS/customer/day for this format. Resets at midnight. next_eval_time set to next valid delivery moment = Tue 9:00 AM (midnight + quiet hours adjustment)'},
+    ...Array.from({length:12},(_,i)=>({n:i+7, r:'skip', v:'Not evaluated (evaluation stopped at Step 6)'})),
+  ],
+  queue:{
+    events:[
+      {dot:'qdot-queue', line:'qline-amber', time:'T₀ · Mon 3:00 PM', title:'Queue Entry Created',
+        desc:'Step 6 fired (B3 Format Day Cap). Queue entry created.',
+        code:`blocking_rule: B3_FORMAT_DAY_CAP\nqueue_entry_time: Monday 15:00\nqueue_expiry_time: Thursday 15:00  (T₀ + 72h)\nnext_eval_time: Tuesday 09:00  ← cap resets 00:00, quiet hours push to 9AM\nstatus: QUEUED`,
+        alert:null},
+      {dot:'qdot-event', line:'qline-blue', time:'TTL CHECK · SET-TIME', title:'TTL Validated at next_eval_time Set-Time',
+        desc:'Immediately after calculating next_eval_time, system checks: Tue 9AM ≤ Thu 3PM (T₀+72h). ✓ Valid — queue entry created.',
+        code:`next_eval_time (Tue 09:00) ≤ queue_expiry_time (Thu 15:00) ✓\nQueue entry created.`, alert:null},
+      {dot:'qdot-reeval', line:'qline-purple', time:'T₁ · Tue 9:01 AM', title:'Re-evaluation: Full Pipeline Step 1–18',
+        desc:'Full v8 pipeline runs from Step 1. Customer state is re-checked live — state may have changed since T₀.',
+        code:`Step 1–5:  PASS  (no suppression/consent/reachability change)\nStep 6:    PASS  (daily cap reset at midnight → 0/1 today)\nStep 7:    PASS  (week cap: 1/2 this week — 1 remaining)\nStep 8:    PASS  (month cap: 1/5 this month — 4 remaining)\nStep 9:    PASS  (retail day: 1/2 → 1 remaining)\nStep 10:   PASS  (retail week / month: fine)\nStep 11:   PASS\nStep 12:   PASS  (9:01 AM = outside quiet window ← THIS is why next_eval was 9AM not midnight)\nStep 13:   PASS  (cooldown: last send Mon 3PM → 18h ago... wait)\nStep 14:   PASS  (no cross-format SMS in last 30 min)\nStep 15:   PASS  (no send on any channel in last 30 min)\nStep 16–18: PASS  (vol caps fine)`,
+        alert:'qa-send'},
+    ],
+    reevalNote:'⚠ Step 13 detail: Last JioMart SMS was Mon 3:00 PM. Re-eval is Tue 9:01 AM. Elapsed = 18h 1min. Format cooldown = 24h. NOT cleared yet. This would flush as SECOND_QUEUE_ATTEMPT — see Scenario S08 for this exact situation. In this scenario, we assume the last JioMart SMS was sent earlier (e.g. Mon 9:00 AM), so 24h cooldown has elapsed by Tue 9AM. All steps pass → SENT.'
+  },
+  dual:null,
+  outcome:{cls:'oc-send', icon:'✓', type:'MESSAGE SENT', code:'DISPATCHED_FROM_QUEUE',
+    desc:'Queue entry resolved successfully. Message delivered to Kavya at Tuesday 9:01 AM — <strong>18 hours after the original dispatch attempt</strong>. The quiet-hours-aware next_eval_time scheduling (9AM, not midnight) was critical: had next_eval been set to midnight, Step 12 (Quiet Time) would have fired at re-eval, triggering the Single Queue Attempt Rule and flushing the message — a false flush caused by poor scheduling. Setting next_eval to the first valid delivery moment avoids this entirely.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S08', title:'Queue → FLUSH: SECOND_QUEUE_ATTEMPT',
+  subtitle:'Daily cap queues at T₀. At re-evaluation (next morning), daily cap clears — but Format Cooldown (24h) has not yet elapsed. Single Queue Attempt Rule fires → FLUSH.',
+  tag:'t-flush', tagLabel:'FLUSH',
+  ctx:[
+    {label:'Customer', value:'Priya'}, {label:'Format', value:'JioMart'},
+    {label:'Channel', value:'SMS'}, {label:'Campaign', value:'Grocery Flash Sale'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Tuesday · 2:00 PM'},
+    {label:'Time Sensitive', value:'OFF'},
+  ],
+  state:[
+    {d:'d-ok', l:'Steps 1–5', v:'All pass (no suppression, consent active, reachable)'},
+    {d:'d-bad', l:'B3 Format Day Cap', v:'1/1 JioMart SMS today — cap exhausted (last send: Tue 2:00 PM)'},
+    {d:'d-warn', l:'Format Cooldown (JioMart SMS)', v:'Last JioMart SMS: Tue 2:00 PM — 24h cooldown active until Wed 2:00 PM'},
+  ],
+  steps:[
+    {n:1, r:'pass', v:'Not suppressed (retail)'},
+    {n:2, r:'pass', v:'Not suppressed (JioMart)'},
+    {n:3, r:'pass', v:'Consent active'},
+    {n:4, r:'pass', v:'Valid mobile'},
+    {n:5, r:'pass', v:'Not unsubscribed'},
+    {n:6, r:'defer', v:'1/1 JioMart SMS today — cap exhausted', note:'Queue entry created. next_eval = Wed 9:00 AM (midnight reset + quiet hours)'},
+    ...Array.from({length:12},(_,i)=>({n:i+7, r:'skip', v:'Not evaluated'})),
+  ],
+  queue:{
+    events:[
+      {dot:'qdot-queue', line:'qline-amber', time:'T₀ · Tue 2:00 PM', title:'Queue Entry Created — B3 Format Day Cap',
+        desc:'Step 6 fired.',
+        code:`blocking_rule: B3_FORMAT_DAY_CAP\nqueue_entry_time: Tuesday 14:00\nqueue_expiry_time: Friday 14:00  (T₀ + 72h)\nnext_eval_time: Wednesday 09:00  (midnight reset → quiet hours → 9AM)\nstatus: QUEUED`,
+        alert:null},
+      {dot:'qdot-event', line:'qline-blue', time:'TTL CHECK · SET-TIME', title:'TTL Check Passes',
+        desc:'Wed 9AM ≤ Fri 2PM ✓ — queue entry created.',
+        code:`next_eval_time (Wed 09:00) ≤ queue_expiry_time (Fri 14:00) ✓`, alert:null},
+      {dot:'qdot-reeval', line:'qline-purple', time:'T₁ · Wed 9:01 AM', title:'Re-evaluation: Full Pipeline Step 1–18',
+        desc:'Full pipeline runs from Step 1. eval_attempt_count = 1.',
+        code:`Step 1–5:   PASS\nStep 6:     PASS  (daily cap reset at midnight → 0/1 today)\nStep 7:     PASS  (2/2 week — wait, cap hit? No — 1/2 if only 1 sent Mon. Assume 1/2 → PASS)\nStep 8:     PASS\nStep 9–11:  PASS  (retail caps fine)\nStep 12:    PASS  (9:01 AM — outside quiet window ✓)\nStep 13:    BLOCK ← B3 Format Cooldown`,
+        alert:null},
+      {dot:'qdot-flush', line:'qline-red', time:'T₁ · STEP 13 FIRES', title:'Format Cooldown Not Cleared',
+        desc:'Last JioMart SMS was Tuesday 2:00 PM. Re-eval is Wednesday 9:01 AM. Elapsed = 19 hours 1 minute. Cooldown = 24 hours. 4 hours 59 minutes remain.',
+        code:`Last JioMart SMS:   Tue 14:00\nCooldown duration:  24h\nCooldown lifts at:  Wed 14:00\nCurrent time:       Wed 09:01 ← still inside cooldown window\nThis is a second deferrable condition encountered during re-evaluation.\nSingle Queue Attempt Rule: ONE queue attempt per customer per campaign_instance_id.\nRe-queueing would create cascading queue chains. → FLUSH IMMEDIATELY.`,
+        alert:'qa-flush'},
+    ],
+    reevalNote:null
+  },
+  dual:null,
+  outcome:{cls:'oc-flush', icon:'⊘', type:'FLUSHED', code:'SECOND_QUEUE_ATTEMPT',
+    desc:'The <strong>Single Queue Attempt Rule</strong> fires. A campaign message may enter the queue exactly once per customer per campaign_instance_id. At re-evaluation, any deferrable condition encountered — regardless of whether it\'s the same rule or a different one than the original block — triggers an immediate flush. The message is not delivered. <strong>Why this design:</strong> Re-queueing would create cascading queue chains (Day Cap → Cooldown → ?) and could hold stale campaigns indefinitely. One queue attempt is sufficient to handle a single timing misalignment.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S09', title:'Queue → FLUSH: NEXT_EVAL_EXCEEDS_TTL',
+  subtitle:'Day cap queues at T₀. Re-eval next morning clears day cap but hits weekly cap. Reset for weekly cap (Monday 9AM) is beyond T₀+72h. FLUSH at set-time — entry closed immediately.',
+  tag:'t-flush', tagLabel:'FLUSH',
+  ctx:[
+    {label:'Customer', value:'Rahul'}, {label:'Format', value:'Ajio'},
+    {label:'Channel', value:'SMS'}, {label:'Campaign', value:'End of Season Teaser'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Wednesday · 2:00 PM'},
+    {label:'Time Sensitive', value:'OFF'},
+  ],
+  state:[
+    {d:'d-ok', l:'Steps 1–5', v:'All pass'},
+    {d:'d-bad', l:'B3 Format Day Cap', v:'1/1 Ajio SMS today — cap exhausted'},
+    {d:'d-warn', l:'B3 Format Week Cap', v:'2/2 Ajio SMS this week — WEEKLY CAP EXHAUSTED (resets Monday)'},
+    {d:'d-info', l:'T₀ + 72h', v:'Wednesday 2PM + 72h = Saturday 2PM'},
+    {d:'d-info', l:'Monday 9AM vs Saturday 2PM', v:'Monday 9AM > Saturday 2PM → TTL exceeded'},
+  ],
+  steps:[
+    {n:1, r:'pass', v:'Not suppressed (retail)'},
+    {n:2, r:'pass', v:'Not suppressed (Ajio)'},
+    {n:3, r:'pass', v:'Consent active'},
+    {n:4, r:'pass', v:'Valid mobile'},
+    {n:5, r:'pass', v:'Not unsubscribed'},
+    {n:6, r:'defer', v:'1/1 Ajio SMS today — cap exhausted', note:'Queue entry created. next_eval = Thu 9:00 AM'},
+    ...Array.from({length:12},(_,i)=>({n:i+7, r:'skip', v:'Not evaluated at T₀'})),
+  ],
+  queue:{
+    events:[
+      {dot:'qdot-queue', line:'qline-amber', time:'T₀ · Wed 2:00 PM', title:'Queue Entry Created — B3 Format Day Cap',
+        desc:'Step 6 fired.',
+        code:`blocking_rule: B3_FORMAT_DAY_CAP\nqueue_entry_time: Wednesday 14:00\nqueue_expiry_time: Saturday 14:00  (T₀ + 72h)\nnext_eval_time: Thursday 09:00\nstatus: QUEUED`,
+        alert:null},
+      {dot:'qdot-reeval', line:'qline-purple', time:'T₁ · Thu 9:01 AM', title:'Re-evaluation: Full Pipeline',
+        desc:'Full pipeline runs from Step 1.',
+        code:`Step 1–5:  PASS\nStep 6:    PASS  (daily cap reset at midnight → 0/1 today)\nStep 7:    BLOCK ← B3 Format Weekly Cap: 2/2 Ajio SMS this week. Weekly reset = Monday 00:00.`,
+        alert:null},
+      {dot:'qdot-flush', line:'qline-red', time:'T₁ STEP 7 SET-TIME CHECK', title:'TTL Validation at next_eval_time Set-Time',
+        desc:'Step 7 fires. Would set next_eval to Monday 9:00 AM. TTL check runs IMMEDIATELY at set-time before the entry is updated.',
+        code:`Would-be next_eval_time: Monday 09:00 AM\nqueue_expiry_time:       Saturday 14:00  (T₀ + 72h)\n\nMonday 09:00 > Saturday 14:00  → EXCEEDS TTL\n\n→ FLUSH IMMEDIATELY. Entry never updated / closed on spot.\nReason: NEXT_EVAL_EXCEEDS_TTL`,
+        alert:'qa-flush'},
+    ],
+    reevalNote:'This demonstrates the set-time TTL check: the flush happens at the moment next_eval_time would be SET, not at pickup. This prevents queue bloat — no entry sits waiting to be flushed later. The weekly cap reset (Monday) will virtually always exceed the 72h TTL window for any T₀ from Tuesday through Friday. Monthly resets are worse: they almost always flush immediately.'
+  },
+  dual:null,
+  outcome:{cls:'oc-flush', icon:'⊘', type:'FLUSHED', code:'NEXT_EVAL_EXCEEDS_TTL',
+    desc:'The weekly cap reset (Monday 9AM) is beyond <strong>T₀ + 72 hours</strong> (Saturday 2PM). Holding this queue entry is pointless — the cap will not reset within the TTL window. The TTL check at next_eval_time set-time catches this immediately and closes the entry without ever creating it. <strong>Pattern:</strong> Weekly cap flushes are the norm mid-week (Tue–Fri). Monthly cap flushes are virtually guaranteed in all cases.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S10', title:'Terminal Block Mid-Queue (State Changed While Queued)',
+  subtitle:'Day cap queues message. Customer sends STOP while in queue. Re-evaluation runs full pipeline from Step 1 — catches the new unsubscribe. Entry closed: TERMINAL_BLOCK.',
+  tag:'t-terminal', tagLabel:'TERMINAL MID-QUEUE',
+  ctx:[
+    {label:'Customer', value:'Vikram'}, {label:'Format', value:'Tira'},
+    {label:'Channel', value:'SMS'}, {label:'Campaign', value:'New Arrivals (evergreen)'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Tuesday · 2:00 PM'},
+  ],
+  state:[
+    {d:'d-ok', l:'Steps 1–5 at T₀', v:'All pass — no suppression, consent active, not unsubscribed'},
+    {d:'d-bad', l:'B3 Format Day Cap at T₀', v:'1/1 Tira SMS today — cap exhausted'},
+    {d:'d-warn', l:'Channel Unsubscribe (event)', v:'Vikram sends STOP to Tira SMS on Wed 8:00 AM — recorded real-time'},
+  ],
+  steps:[
+    {n:1, r:'pass', v:'Not suppressed (retail)'},
+    {n:2, r:'pass', v:'Not suppressed (Tira)'},
+    {n:3, r:'pass', v:'Consent active'},
+    {n:4, r:'pass', v:'Valid mobile'},
+    {n:5, r:'pass', v:'Not unsubscribed — at T₀'},
+    {n:6, r:'defer', v:'1/1 Tira SMS today — cap exhausted', note:'Queue entry created. next_eval = Wed 9:00 AM'},
+    ...Array.from({length:12},(_,i)=>({n:i+7, r:'skip', v:'Not evaluated at T₀'})),
+  ],
+  queue:{
+    events:[
+      {dot:'qdot-queue', line:'qline-amber', time:'T₀ · Tue 2:00 PM', title:'Queue Entry Created — B3 Format Day Cap',
+        desc:'',
+        code:`queue_entry_time: Tuesday 14:00\nqueue_expiry_time: Friday 14:00\nnext_eval_time: Wednesday 09:00\nstatus: QUEUED`,
+        alert:null},
+      {dot:'qdot-event', line:'qline-blue', time:'EVENT · Wed 8:00 AM', title:'Customer Event: Channel Unsubscribe',
+        desc:'Vikram sends STOP to Tira\'s SMS handle. The unsubscribe event is recorded in real-time. The queue entry is NOT updated — the state change will be caught at next re-evaluation.',
+        code:`channel_unsub_event recorded:\n  customer_id: vikram\n  format: tira\n  channel: SMS\n  event_time: Wednesday 08:00\n  queue_entry: unchanged (still QUEUED)`,
+        alert:'qa-event'},
+      {dot:'qdot-reeval', line:'qline-purple', time:'T₁ · Wed 9:01 AM', title:'Re-evaluation: FULL Pipeline from Step 1 (Non-Negotiable)',
+        desc:'The full pipeline ALWAYS runs from Step 1 at re-evaluation — never from the step that caused the queue entry. This is precisely why: customer state changed asynchronously while in queue.',
+        code:`Step 1:   PASS  (not on retail suppression list)\nStep 2:   PASS  (not on Tira suppression list)\nStep 3:   PASS  (consent still active)\nStep 4:   PASS  (valid mobile)\nStep 5:   BLOCK ← Channel Unsubscribe: STOP recorded Wed 8:00 AM`,
+        alert:null},
+      {dot:'qdot-terminal', line:'qline-red', time:'T₁ STEP 5 FIRES', title:'TERMINAL BLOCK — Channel Unsubscribe',
+        desc:'Step 5 catches the STOP event recorded 61 minutes earlier. If evaluation had resumed from Step 6 (the original blocking step), this would have been missed and a message would have been dispatched to an unsubscribed customer — a compliance breach.',
+        code:`terminal_reason: CHANNEL_UNSUB_DURING_QUEUE\nstatus: TERMINAL_BLOCK\nqueue entry closed permanently.`,
+        alert:'qa-terminal'},
+    ],
+    reevalNote:'Steps 1–5 are boolean lookups — the cheapest checks in the pipeline. There is no performance argument for skipping them. Skipping them and delivering to a suppressed or unsubscribed customer would be a compliance breach. The full pipeline from Step 1 is non-negotiable.'
+  },
+  dual:null,
+  outcome:{cls:'oc-terminal', icon:'✗', type:'TERMINAL BLOCK', code:'CHANNEL_UNSUB_DURING_QUEUE',
+    desc:'Vikram\'s unsubscribe event was recorded at 8:00 AM while his message was still in queue. The re-evaluation at 9:01 AM ran the <strong>full pipeline from Step 1</strong> and caught it at Step 5. Message never delivered. Queue entry permanently closed. This is the core argument for why re-evaluation always starts at Step 1: customer state is live and can change at any time while a message sits in queue.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S11', title:'B2 Retail Daily Cap — Cross-Format Aggregate Block',
+  subtitle:'Two formats (JioMart + Trends) have already consumed the retail daily SMS cap for this customer today. A third format (Ajio) passes all its own format checks but is blocked at the retail aggregate layer.',
+  tag:'t-queue-sent', tagLabel:'QUEUE → SENT',
+  ctx:[
+    {label:'Customer', value:'Ananya'}, {label:'Format', value:'Ajio (attempting)'},
+    {label:'Channel', value:'SMS'}, {label:'Campaign', value:'Flash Sale'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Monday · 4:00 PM'},
+  ],
+  state:[
+    {d:'d-ok', l:'Steps 1–5 (Ajio)', v:'All pass — no suppression, consent active, not unsubscribed, valid phone'},
+    {d:'d-ok', l:'B3 Format Day Cap (Ajio SMS)', v:'0/1 — Ajio has not sent SMS to Ananya today'},
+    {d:'d-ok', l:'B3 Format Week/Month Cap (Ajio)', v:'Both within limits'},
+    {d:'d-bad', l:'B2 Retail Day Cap (SMS)', v:'2/2 — JioMart sent 1 SMS (10AM) + Trends sent 1 SMS (2PM). CAP EXHAUSTED'},
+    {d:'d-info', l:'Why B3 passes first', v:'B3 (Ajio format caps) are evaluated before B2 (retail aggregate). B3 passes because Ajio hasn\'t sent to Ananya today.'},
+  ],
+  steps:[
+    {n:1, r:'pass', v:'Not suppressed (retail)'},
+    {n:2, r:'pass', v:'Not suppressed (Ajio)'},
+    {n:3, r:'pass', v:'Consent active for Ajio'},
+    {n:4, r:'pass', v:'Valid mobile number'},
+    {n:5, r:'pass', v:'Not unsubscribed from Ajio SMS'},
+    {n:6, r:'pass', v:'0/1 Ajio SMS today — 1 slot available (format cap fine)'},
+    {n:7, r:'pass', v:'0/2 Ajio SMS this week — fine'},
+    {n:8, r:'pass', v:'0/5 Ajio SMS this month — fine'},
+    {n:9, r:'defer', v:'2/2 retail SMS today (JioMart 1 + Trends 1) — RETAIL DAILY CAP EXHAUSTED', note:'B2 retail aggregate runs after B3 format caps. This is the most expensive query (aggregates across all 200 formats) — run last for efficiency, only when B3 hasn\'t already blocked.'},
+    ...Array.from({length:9},(_,i)=>({n:i+10, r:'skip', v:'Not evaluated'})),
+  ],
+  queue:{
+    events:[
+      {dot:'qdot-queue', line:'qline-amber', time:'T₀ · Mon 4:00 PM', title:'Queue Entry Created — B2 Retail Day Cap',
+        desc:'',
+        code:`blocking_rule: B2_RETAIL_DAY_CAP\nqueue_entry_time: Monday 16:00\nqueue_expiry_time: Thursday 16:00  (T₀ + 72h)\nnext_eval_time: Tuesday 09:00  (midnight cap reset + quiet hours)\nstatus: QUEUED`,
+        alert:null},
+      {dot:'qdot-reeval', line:'qline-purple', time:'T₁ · Tue 9:01 AM', title:'Re-evaluation: Full Pipeline',
+        desc:'Retail aggregate cap resets at midnight. All formats\' SMS counts for Ananya reset to 0.',
+        code:`Step 1–8:   PASS\nStep 9:     PASS  (retail day cap reset → 0/2 today for Ananya across all formats)\nStep 10–11: PASS\nStep 12:    PASS  (9AM — outside quiet window)\nStep 13:    CHECK ← Format Cooldown: Ajio last sent SMS to Ananya... never (0 sends). No cooldown. PASS.\nStep 14–18: PASS`,
+        alert:'qa-send'},
+    ],
+    reevalNote:null
+  },
+  dual:null,
+  outcome:{cls:'oc-send', icon:'✓', type:'MESSAGE SENT', code:'DISPATCHED_FROM_QUEUE',
+    desc:'The retail daily cap exists to protect customers from being contacted too many times across <strong>all 200 formats combined</strong>. JioMart and Trends each used one of the two daily SMS slots. When Ajio attempted to send, the retail aggregate was exhausted. The message was held overnight and delivered the next morning after the retail cap reset. <strong>Design note:</strong> The B2 query (cross-200-format aggregate) runs only after B3 passes — format caps are tighter than retail caps for most channels, so B3 often eliminates the customer before the expensive B2 query is needed.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S12', title:'B5 Global Cross-Channel Cooldown — Time Sensitive ON vs OFF',
+  subtitle:'A send on WhatsApp 15 min ago (any format) has started the 30-min global cross-channel cooldown. An SMS attempt from a different format hits Step 15. Outcome depends entirely on the Time Sensitive Override toggle.',
+  tag:'t-override', tagLabel:'TS OVERRIDE',
+  ctx:[
+    {label:'Customer', value:'Rohan'}, {label:'Format', value:'Ajio (attempting SMS)'},
+    {label:'Channel', value:'SMS'}, {label:'Campaign', value:'Weekend Coupon'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Monday · 2:20 PM'},
+    {label:'Last Send', value:'JioMart WhatsApp to Rohan at 2:00 PM (20 min ago)'},
+  ],
+  state:[
+    {d:'d-ok', l:'Steps 1–14', v:'All pass — no suppression, consent, reachability, cap issues'},
+    {d:'d-warn', l:'B5 Global Cross-Channel Cooldown', v:'Last send: Mon 2:00 PM (JioMart WhatsApp). Elapsed: 20 min. Need: 30 min. Cooldown expires: Mon 2:30 PM'},
+    {d:'d-info', l:'B2 Cross-Format Channel Cooldown', v:'Checks same channel (SMS) — no SMS sent to Rohan in last 30 min → PASS at Step 14'},
+    {d:'d-info', l:'B5 scope', v:'Any format × ANY channel. The WhatsApp send 20 min ago starts this cooldown for ALL channels.'},
+  ],
+  steps:[
+    ...Array.from({length:14},(_,i)=>({n:i+1, r:'pass', v:i<5?'Eligibility gate — pass':i<8?'B3 format cap — pass':i<11?'B2 retail cap — pass':i===11?'12:00 PM — outside quiet window':i===12?'No Ajio SMS in last 24h — pass':'No SMS from any format in last 30 min — pass'})),
+    {n:15, r:'defer', v:'Global cooldown: last send (JioMart WhatsApp) was 20 min ago. Need 30 min. Lifts at 2:30 PM.', note:'Scope: any send to this customer on ANY channel from ANY format. A WhatsApp send 20 min ago starts the global cross-channel cooldown for all subsequent sends.'},
+    ...Array.from({length:3},(_,i)=>({n:i+16, r:'skip', v:'Not evaluated'})),
+  ],
+  queue:null,
+  dual:{
+    on:{
+      title:'TIME SENSITIVE = ON → EXCLUDE IMMEDIATELY',
+      body:'The campaign manager flagged this as time-sensitive. Rohan is <strong>excluded from this campaign immediately</strong> — he will not receive it at 2:30 PM or at any future point. No queue entry is created. The override turns the DEFER into an immediate exclusion. Use case: flash sale ending at 3PM — a 30-min delay makes the message meaningless.',
+      code:'EXCLUDED (GLOBAL_COOLDOWN_TS_OVERRIDE)\nNo queue entry created.'
+    },
+    off:{
+      title:'TIME SENSITIVE = OFF → QUEUE → SENT at 2:30 PM',
+      body:'Rohan is queued. <span class="dual-code">next_eval_time = MAX(2:00 PM + 30min, next quiet open) = 2:30 PM</span>. 2:30 PM is outside quiet hours (9PM–9AM). TTL check: 2:30 PM ≤ Mon 2:20 PM + 72h ✓. Queue entry created.<br><br>At T₁ (2:31 PM): Full pipeline from Step 1. Step 15: 31 min elapsed → <strong>PASS</strong>. Steps 16–18 pass → <strong>SENT</strong>.',
+      code:'QUEUED → DISPATCHED_FROM_QUEUE (31 min later)'
+    }
+  },
+  outcome:{cls:'oc-flush', icon:'⚡', type:'DEPENDS ON TIME SENSITIVE TOGGLE', code:'',
+    desc:'Step 15 (B5 Global Cross-Channel Cooldown) is <strong>overridable</strong>. When Time Sensitive = ON, the DEFER becomes an immediate exclusion and no queue entry is created. When Time Sensitive = OFF (default), the message is queued and delivered after the cooldown lifts. The 30-minute window is short enough that the TTL check almost never flushes a Step 15 block — unless the cooldown lift time falls inside quiet hours, in which case next_eval advances to 9AM.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S13', title:'B3 Format Cooldown (Email) — Time Sensitive ON vs OFF',
+  subtitle:'Ajio sent an email 4 hours ago. The Email format cooldown is 8 hours. 4 hours remain. Step 13 fires. Outcome depends on the Time Sensitive toggle.',
+  tag:'t-override', tagLabel:'TS OVERRIDE',
+  ctx:[
+    {label:'Customer', value:'Leela'}, {label:'Format', value:'Ajio'},
+    {label:'Channel', value:'Email'}, {label:'Campaign', value:'New Season Collection'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Monday · 2:00 PM'},
+    {label:'Last Ajio Email', value:'Monday 10:00 AM (4 hours ago). Cooldown = 8h. Lifts at 6:00 PM.'},
+  ],
+  state:[
+    {d:'d-ok', l:'Steps 1–12', v:'All pass (quiet time: Email quiet window is 10PM–8AM; 2PM is outside)'},
+    {d:'d-warn', l:'B3 Format Cooldown (Email)', v:'Last Ajio email: 10AM. Elapsed: 4h. Need: 8h. Lifts at 6:00 PM.'},
+    {d:'d-info', l:'Email cooldown', v:'Email format cooldown = 8h (shorter than SMS/RCS/WA 24h, as email is less intrusive)'},
+  ],
+  steps:[
+    ...Array.from({length:12},(_,i)=>({n:i+1, r:'pass', v:i<5?'Eligibility gate — pass':i<8?'B3 format Email cap — pass (0/2, 0/5, 0/15)':i<11?'B2 retail Email cap — pass (0/5 day)':'2:00 PM — outside Email quiet window (10PM–8AM)'})),
+    {n:13, r:'defer', v:'Format Cooldown: last Ajio email 10:00 AM. Elapsed = 4h. Cooldown = 8h. Lifts at 6:00 PM.', note:'Cooldown is per-format per-channel per-customer. Clock-based. next_eval = MAX(10AM + 8h, next quiet open) = MAX(6PM, 8AM Email open) = 6PM (6PM is outside Email quiet window 10PM–8AM, so 6PM is valid).'},
+    ...Array.from({length:5},(_,i)=>({n:i+14, r:'skip', v:'Not evaluated'})),
+  ],
+  queue:null,
+  dual:{
+    on:{
+      title:'TIME SENSITIVE = ON → EXCLUDE IMMEDIATELY',
+      body:'Leela is <strong>excluded immediately</strong>. No queue entry. Campaign sends only to customers eligible right now. Use case: a limited-time offer expiring tonight at 8PM where a 4-hour delayed email arrives after expiry.',
+      code:'EXCLUDED (FORMAT_COOLDOWN_TS_OVERRIDE)\nNo queue entry created.'
+    },
+    off:{
+      title:'TIME SENSITIVE = OFF → QUEUE → SENT at 6:00 PM',
+      body:'Leela is queued. <span class="dual-code">next_eval_time = MAX(10AM + 8h, next Email quiet open) = MAX(6PM, 8AM) = 6:00 PM</span>. 6PM is outside Email quiet window (10PM–8AM). TTL check: 6PM ≤ Mon 2PM + 72h ✓. Queue created.<br><br>At T₁ (6:01 PM): full pipeline from Step 1. Step 13: 8h 1min elapsed → <strong>PASS</strong>. Steps 14–18 pass → <strong>SENT</strong>.',
+      code:'QUEUED → DISPATCHED_FROM_QUEUE (4 hours later)'
+    }
+  },
+  outcome:{cls:'oc-flush', icon:'⚡', type:'DEPENDS ON TIME SENSITIVE TOGGLE', code:'',
+    desc:'Email format cooldown is 8 hours — shorter than SMS/RCS/WhatsApp (24h) and Push (12h), reflecting email\'s lower intrusiveness. The 4-hour queue window (if TS OFF) is within the 72h TTL, so the entry will be created and delivered. If the cooldown lift time (6PM) were to fall inside the quiet window (e.g. if the last email was sent at 1AM, lift = 9AM which is fine; but if sent at 2PM and cooldown = 8h → 10PM which is inside quiet window 10PM–8AM → next_eval advances to 8AM next day).'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S14', title:'B1 Quiet Time (Sunday) — Time Sensitive ON vs OFF',
+  subtitle:'Campaign dispatched on Sunday morning. Quiet Time (Sunday = always blocked) fires at Step 12. Outcome depends on the Time Sensitive toggle.',
+  tag:'t-override', tagLabel:'TS OVERRIDE',
+  ctx:[
+    {label:'Customer', value:'Harish'}, {label:'Format', value:'JioMart'},
+    {label:'Channel', value:'SMS'}, {label:'Campaign', value:'Weekly Newsletter'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Sunday · 11:00 AM'},
+    {label:'Quiet Rule', value:'Sundays are always in quiet window for SMS'},
+  ],
+  state:[
+    {d:'d-ok', l:'Steps 1–11', v:'All pass — no suppression, consent active, all caps within limits'},
+    {d:'d-bad', l:'B1 Quiet Time', v:'SUNDAY — all day blocked regardless of hour'},
+    {d:'d-info', l:'T₀ + 72h', v:'Sunday 11AM + 72h = Wednesday 11AM'},
+    {d:'d-info', l:'Monday 9AM vs Wed 11AM', v:'Monday 9AM ≤ Wed 11AM ✓ — TTL will not be exceeded'},
+  ],
+  steps:[
+    ...Array.from({length:11},(_,i)=>({n:i+1, r:'pass', v:i<5?'Eligibility gate — pass':i<8?'B3 format cap — pass':i<11?'B2 retail cap — pass':'n/a'})),
+    {n:12, r:'defer', v:'Quiet Time: SUNDAY — send blocked all day', note:'Sunday is part of quiet time alongside the 9PM–9AM nightly window and Holiday Calendar. next_eval = Monday 9:00 AM (next valid non-Sunday, non-Holiday day at channel quiet open). If TS ON: no queue entry, immediate exclusion.'},
+    ...Array.from({length:6},(_,i)=>({n:i+13, r:'skip', v:'Not evaluated'})),
+  ],
+  queue:null,
+  dual:{
+    on:{
+      title:'TIME SENSITIVE = ON → EXCLUDE IMMEDIATELY',
+      body:'Harish is <strong>excluded immediately</strong>. The campaign is "time-sensitive" — the operator has decided that delivery timing is critical and a day\'s delay makes the message irrelevant. No queue entry created.',
+      code:'EXCLUDED (QUIET_TIME_TS_OVERRIDE)\nNo queue entry created.'
+    },
+    off:{
+      title:'TIME SENSITIVE = OFF → QUEUE → SENT Monday 9:00 AM',
+      body:'Harish is queued. <span class="dual-code">next_eval_time = Monday 09:00 AM</span> (next valid non-Sunday, non-Holiday day at SMS quiet open). TTL check: Mon 9AM ≤ Wed 11AM (T₀+72h) ✓. Queue created.<br><br>At T₁ (Mon 9:01 AM): Full pipeline. Step 12: Monday 9:01 AM — not Sunday, not holiday, outside 9PM–9AM → <strong>PASS</strong>. Steps 13–18 pass → <strong>SENT</strong>.',
+      code:'QUEUED → DISPATCHED_FROM_QUEUE (Monday 9:00 AM)'
+    }
+  },
+  outcome:{cls:'oc-flush', icon:'⚡', type:'DEPENDS ON TIME SENSITIVE TOGGLE', code:'',
+    desc:'Quiet Time applies to: (a) the 9PM–9AM nightly window, (b) all of Sunday, (c) dates on the Holiday Calendar. These are global defaults that formats can override within bounds. For Email, the quiet window is 10PM–8AM. <strong>Holiday Calendar note:</strong> If Monday is also a holiday, next_eval advances to the next valid non-Sunday, non-Holiday day at 9AM — potentially Tuesday or beyond. If that next valid day exceeds T₀+72h, FLUSH IMMEDIATELY.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S15', title:'B2 Cross-Format Channel Cooldown → Queue → SENT',
+  subtitle:'Hamleys sent an RCS message to this customer 15 minutes ago. Reliance Digital\'s RCS campaign now hits the 30-min cross-format channel cooldown at Step 14. Queued for 15 minutes — re-eval passes.',
+  tag:'t-queue-sent', tagLabel:'QUEUE → SENT',
+  ctx:[
+    {label:'Customer', value:'Nisha'}, {label:'Format', value:'Reliance Digital'},
+    {label:'Channel', value:'RCS'}, {label:'Campaign', value:'Gadget Deals'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Monday · 2:15 PM'},
+    {label:'Triggering Event', value:'Hamleys RCS sent at 2:00 PM (15 min ago)'},
+    {label:'Time Sensitive', value:'OFF'},
+  ],
+  state:[
+    {d:'d-ok', l:'Steps 1–13', v:'All pass — eligibility, all format/retail caps fine, format cooldown not triggered (Rel. Digital hasn\'t sent RCS recently)'},
+    {d:'d-warn', l:'B2 Cross-Format Channel Cooldown (RCS)', v:'Hamleys sent RCS at 2:00 PM. Elapsed: 15 min. Need: 30 min. Lifts at 2:30 PM.'},
+    {d:'d-info', l:'Scope distinction', v:'Step 14 = same channel, different formats. Step 15 = any channel, any format. Both can apply to the same send event.'},
+  ],
+  steps:[
+    ...Array.from({length:13},(_,i)=>({n:i+1, r:'pass', v:i<5?'Eligibility gate — pass':i<8?'B3 format RCS cap — pass (Rel. Digital has not sent RCS to Nisha recently)':i<11?'B2 retail RCS cap — pass':i===11?'2:15 PM — outside quiet window (9PM–9AM)':'No Reliance Digital RCS in last 24h — cooldown inactive'})),
+    {n:14, r:'defer', v:'Cross-format RCS cooldown: Hamleys sent RCS 15 min ago. Need 30 min gap between any RCS from any format.', note:'next_eval = MAX(2:00 PM + 30min, next quiet open if in window) = MAX(2:30 PM, not in window) = 2:30 PM'},
+    {n:15, r:'skip', v:'Not evaluated (blocked at Step 14)'},
+    {n:16, r:'skip', v:'Not evaluated'},
+    {n:17, r:'skip', v:'Not evaluated'},
+    {n:18, r:'skip', v:'Not evaluated'},
+  ],
+  queue:{
+    events:[
+      {dot:'qdot-queue', line:'qline-amber', time:'T₀ · Mon 2:15 PM', title:'Queue Entry Created — B2 Cross-Format Channel Cooldown',
+        desc:'',
+        code:`blocking_rule: B2_CROSS_FORMAT_COOLDOWN\nqueue_entry_time: Monday 14:15\nqueue_expiry_time: Thursday 14:15  (T₀ + 72h)\nnext_eval_time: Monday 14:30  (2:00 PM + 30min = 2:30 PM. Outside quiet hours ✓)\nstatus: QUEUED`,
+        alert:null},
+      {dot:'qdot-event', line:'qline-blue', time:'TTL CHECK · SET-TIME', title:'TTL Check Passes (easily)',
+        desc:'Mon 2:30 PM ≤ Thu 2:15 PM + 72h. Queue created.',
+        code:`next_eval_time (Mon 14:30) ≤ queue_expiry_time (Thu 14:15) ✓`, alert:null},
+      {dot:'qdot-reeval', line:'qline-purple', time:'T₁ · Mon 2:31 PM', title:'Re-evaluation: Full Pipeline (16 min later)',
+        desc:'',
+        code:`Step 1–13:  PASS\nStep 14:    PASS  ← 31 min since last RCS from any format. 30-min cooldown cleared ✓\nStep 15:    PASS  ← Global cooldown also checks: last send (Hamleys RCS) was 31 min ago ✓\nStep 16–18: PASS  (vol caps fine)`,
+        alert:'qa-send'},
+    ],
+    reevalNote:null
+  },
+  dual:null,
+  outcome:{cls:'oc-send', icon:'✓', type:'MESSAGE SENT', code:'DISPATCHED_FROM_QUEUE',
+    desc:'Cross-format channel cooldown resolved in 15 minutes. Message delivered to Nisha at 2:31 PM — <strong>16 minutes after the original attempt</strong>. This is one of the shortest possible queue windows in the system. <strong>Note on B2 vs B5 overlap:</strong> Step 14 (cross-format, same channel) and Step 15 (global, any channel) can both apply to the same triggering event. In this case, both fired conceptually from the same Hamleys RCS send, but Step 14 was reached first. At re-eval, both cleared simultaneously.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S16', title:'B1 Volume Cap (Day) — Format Throughput Hold',
+  subtitle:'JioMart has exhausted its daily SMS volume cap of 1,000,000. Remaining messages in the dispatch batch are held. This is a campaign-level throughput gate, not a per-customer eligibility check.',
+  tag:'t-queue-sent', tagLabel:'QUEUE → SENT',
+  ctx:[
+    {label:'Format', value:'JioMart'}, {label:'Channel', value:'SMS'},
+    {label:'Campaign', value:'End of Month Deals (batch of 1.2M customers)'},
+    {label:'Volume Cap', value:'1,000,000 SMS / day'}, {label:'T₀', value:'Monday · 9:00 PM'},
+    {label:'Sent so far', value:'1,000,000 (cap hit). 200,000 customers still in batch queue.'},
+  ],
+  state:[
+    {d:'d-ok', l:'Per-customer eligibility (Steps 1–15)', v:'All 200K remaining customers have passed Steps 1–15'},
+    {d:'d-bad', l:'B1 Volume Cap / Day', v:'JioMart SMS vol: 1,000,000 / 1,000,000 — DAILY CAP EXHAUSTED'},
+    {d:'d-info', l:'Nature of this block', v:'Not a per-customer check. The entire remaining dispatch batch is held until the cap resets.'},
+    {d:'d-warn', l:'Quiet Time interaction', v:'Cap resets at midnight, but 9PM–9AM is quiet time. next_eval = 9:00 AM tomorrow.'},
+  ],
+  steps:[
+    ...Array.from({length:15},(_,i)=>({n:i+1, r:'pass', v:i<5?'Eligibility gate — pass (per-customer)':i<8?'B3 format cap — pass':i<11?'B2 retail cap — pass':i===11?'9:00 PM → inside quiet window for this customer individually, but Step 16 (vol cap) fires for the batch — see note':i===12?'Format cooldown — pass':i===13?'Cross-format cooldown — pass':'Global cooldown — pass'})),
+    {n:16, r:'defer', v:'JioMart SMS daily vol: 1,000,000 / 1,000,000. Cap exhausted.', note:'Entire remaining dispatch batch held. This is not a per-customer block — it is a campaign throughput governor. Cap resets at midnight. next_eval = Tue 9:00 AM (midnight + quiet hours). Volume caps are NOT overridable by Time Sensitive Override.'},
+    {n:17, r:'skip', v:'Not evaluated (batch held at vol cap day)'},
+    {n:18, r:'skip', v:'Not evaluated'},
+  ],
+  queue:{
+    events:[
+      {dot:'qdot-queue', line:'qline-amber', time:'T₀ · Mon 9:00 PM', title:'Batch Hold — B1 Volume Cap Day',
+        desc:'200,000 remaining customers\' queue entries created. Each customer gets an individual queue entry record.',
+        code:`blocking_rule: B1_FORMAT_VOL_DAY_CAP\nqueue_entry_time: Monday 21:00\nqueue_expiry_time: Thursday 21:00  (T₀ + 72h)\nnext_eval_time: Tuesday 09:00  (midnight reset + quiet hours 9PM–9AM → 9AM)\nstatus: QUEUED\n\nNote: 200,000 individual queue entries created, one per customer.`,
+        alert:null},
+      {dot:'qdot-reeval', line:'qline-purple', time:'T₁ · Tue 9:01 AM', title:'Re-evaluation: Full Pipeline Per Customer',
+        desc:'Daily vol cap resets at midnight. Full pipeline runs for each queued customer from Step 1. Some customers may have changed state overnight.',
+        code:`Step 1–5:   Re-checked per customer (some may have unsubscribed overnight)\nStep 6:     PASS  (day cap = 0/1 for this customer today — no other Jiomart SMS today)\nStep 12:    PASS  (9:01 AM — outside quiet window ✓)\nStep 16:    PASS  (vol cap reset → 0/1,000,000 today)\nAll pass → SENT (for customers whose state is still valid)`,
+        alert:'qa-send'},
+    ],
+    reevalNote:'Volume cap blocks affect the entire dispatch batch simultaneously, not individual customers. This means 200,000 queue entries are created at once. At re-evaluation, each is processed individually — customers who changed state overnight (unsubscribed, newly suppressed) will be caught by Step 1–5. Volume caps are NOT overridable by the Time Sensitive Override — they are hard blocks.'
+  },
+  dual:null,
+  outcome:{cls:'oc-send', icon:'✓', type:'BATCH SENT NEXT MORNING', code:'DISPATCHED_FROM_QUEUE',
+    desc:'The remaining 200,000 customers in the batch were queued at 9:00 PM and delivered starting at 9:01 AM the following morning when the daily volume cap reset. <strong>Key distinction:</strong> Volume caps are format-level throughput governors, not per-customer eligibility filters. They act on the dispatch queue as a whole. <strong>Large formats</strong> (JioMart, Ajio, Smart Bazaar) with tens of millions of customers routinely need elevated caps via platform admin approval — the default 1M/day is calibrated for mid-sized formats.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S17', title:'Weekly Cap → FLUSH IMMEDIATELY (Set-Time TTL Check)',
+  subtitle:'Day cap fires at T₀ (Thursday). Queue entry created. At re-eval (Friday 9AM), day cap clears but weekly cap fires. Reset for weekly cap = Monday 9AM. Monday 9AM > T₀+72h (Sunday 2PM). FLUSH IMMEDIATELY — entry never created.',
+  tag:'t-flush', tagLabel:'FLUSH IMMEDIATE',
+  ctx:[
+    {label:'Customer', value:'Sonia'}, {label:'Format', value:'Trends'},
+    {label:'Channel', value:'SMS'}, {label:'Campaign', value:'Weekend Picks'},
+    {label:'Type', value:'Promotional'}, {label:'T₀', value:'Thursday · 2:00 PM'},
+    {label:'T₀ + 72h', value:'Sunday 2:00 PM (the TTL window)'},
+    {label:'Monday 9AM vs Sunday 2PM', value:'Monday 9AM > Sunday 2PM → TTL exceeded'},
+  ],
+  state:[
+    {d:'d-ok', l:'Steps 1–5', v:'All pass'},
+    {d:'d-bad', l:'B3 Format Day Cap', v:'1/1 Trends SMS today — cap exhausted'},
+    {d:'d-warn', l:'B3 Format Week Cap', v:'2/2 Trends SMS this week — WEEKLY CAP ALSO EXHAUSTED (resets Monday 00:00)'},
+    {d:'d-info', l:'TTL window', v:'T₀ = Thu 2PM. T₀+72h = Sun 2PM. Monday 9AM > Sunday 2PM → flush inevitable.'},
+  ],
+  steps:[
+    {n:1, r:'pass', v:'Not suppressed (retail)'},
+    {n:2, r:'pass', v:'Not suppressed (Trends)'},
+    {n:3, r:'pass', v:'Consent active'},
+    {n:4, r:'pass', v:'Valid mobile'},
+    {n:5, r:'pass', v:'Not unsubscribed'},
+    {n:6, r:'defer', v:'1/1 Trends SMS today — daily cap exhausted. next_eval = Fri 9AM', note:'Initial queue entry created. next_eval_time = Fri 9AM. TTL check: Fri 9AM ≤ Sun 2PM ✓ — initial entry is created.'},
+    ...Array.from({length:12},(_,i)=>({n:i+7, r:'skip', v:'Not evaluated at T₀'})),
+  ],
+  queue:{
+    events:[
+      {dot:'qdot-queue', line:'qline-amber', time:'T₀ · Thu 2:00 PM', title:'Queue Entry Created — B3 Day Cap',
+        desc:'Step 6 fires. next_eval = Fri 9AM. Fri 9AM ≤ Sun 2PM (TTL). Entry created.',
+        code:`blocking_rule: B3_FORMAT_DAY_CAP\nqueue_entry_time: Thursday 14:00\nqueue_expiry_time: Sunday 14:00  (T₀ + 72h)\nnext_eval_time: Friday 09:00\nstatus: QUEUED`,
+        alert:null},
+      {dot:'qdot-reeval', line:'qline-purple', time:'T₁ · Fri 9:01 AM', title:'Re-evaluation: Full Pipeline',
+        desc:'Daily cap reset. Pipeline runs.',
+        code:`Step 1–5:   PASS\nStep 6:     PASS  (daily cap reset → 0/1 today for Sonia from Trends)\nStep 7:     BLOCK ← B3 Format Weekly Cap: 2/2 Trends SMS this week\n            Would set next_eval = Monday 09:00 AM (weekly reset Mon 00:00 + quiet hours)`,
+        alert:null},
+      {dot:'qdot-flush', line:'qline-red', time:'SET-TIME TTL CHECK · IMMEDIATE', title:'FLUSH: next_eval_time > queue_expiry_time',
+        desc:'The moment Step 7 calculates next_eval = Monday 9AM, the system immediately checks against TTL.',
+        code:`Would-be next_eval_time:  Monday 09:00\nqueue_expiry_time:        Sunday 14:00  (T₀ + 72h)\n\nMonday 09:00 > Sunday 14:00  → EXCEEDS TTL\n\n→ FLUSH IMMEDIATELY at set-time.\n→ Entry closed. No re-queue. Message not delivered.\nReason: NEXT_EVAL_EXCEEDS_TTL`,
+        alert:'qa-flush'},
+    ],
+    reevalNote:'This is the canonical example of why TTL validation runs at SET-TIME (when next_eval_time is calculated), not at pickup time. The flush is inevitable — there is no point holding an entry that will never deliver. Set-time validation eliminates the queue bloat entirely. PATTERN: Weekly cap virtually always flushes mid-week (Tue–Fri). Monthly cap flushes in virtually 100% of cases. Any B3 or B2 weekly/monthly block hit at re-eval will almost certainly flush.'
+  },
+  dual:null,
+  outcome:{cls:'oc-flush', icon:'⊘', type:'FLUSHED', code:'NEXT_EVAL_EXCEEDS_TTL',
+    desc:'The weekly cap reset (Monday) is outside the 72h TTL window when the campaign was dispatched on Thursday. <strong>The system never created a second queue entry</strong> — the flush happened at the moment next_eval_time was calculated (set-time), not when the entry would have been picked up for re-evaluation. This design eliminates dead-weight queue entries that are guaranteed to flush. <strong>Generalised pattern:</strong> Weekly cap resets (Mon 9AM) will always flush for campaigns dispatched Tuesday–Friday. Monthly cap resets (1st of month 9AM) will always flush unless dispatched in the last 2–3 days of the month.'}
+},
+
+// ══════════════════════════════════════════════════════════
+{
+  id:'S18', title:'Transactional Campaign — Full Pipeline Bypass',
+  subtitle:'An order receipt must be delivered immediately. Campaign is classified TRANSACTIONAL. The governance pipeline is bypassed entirely. All caps, cooldowns, and quiet hours are irrelevant.',
+  tag:'t-bypass', tagLabel:'BYPASS',
+  ctx:[
+    {label:'Customer', value:'Divya'}, {label:'Format', value:'Tira'},
+    {label:'Channel', value:'SMS'}, {label:'Campaign', value:'Order Receipt + Loyalty Points'},
+    {label:'Type', value:'TRANSACTIONAL (P0)'}, {label:'T₀', value:'Sunday · 9:30 PM'},
+  ],
+  state:[
+    {d:'d-bad', l:'B2 Retail Day Cap (SMS)', v:'2/2 today — retail daily cap fully exhausted'},
+    {d:'d-bad', l:'B3 Format Day Cap (SMS)', v:'1/1 Tira SMS today — format daily cap exhausted'},
+    {d:'d-bad', l:'B3 Format Cooldown', v:'Last Tira SMS: 7PM — only 2.5h ago. 24h cooldown active.'},
+    {d:'d-bad', l:'Quiet Time', v:'9:30 PM — inside quiet window (9PM–9AM)'},
+    {d:'d-ok', l:'Marketing Consent', v:'Active — Tira'},
+    {d:'d-ok', l:'Reachability', v:'Valid mobile number'},
+    {d:'d-ok', l:'Channel Unsubscribe', v:'Not unsubscribed'},
+    {d:'d-info', l:'Campaign classification', v:'TRANSACTIONAL — mandatory field at campaign creation. Requires approval workflow.'},
+  ],
+  steps:[], // special transactional rendering
+  queue:null, dual:null,
+  transactional:true,
+  outcome:{cls:'oc-bypass', icon:'⚡', type:'MESSAGE SENT (P0 — TRANSACTIONAL)', code:'BYPASS_ALL_GOVERNANCE',
+    desc:'<strong>Transactional messages bypass the entire governance pipeline.</strong> Frequency caps, cooldowns, quiet hours, and volume caps are all irrelevant. The message is dispatched immediately at P0 priority. <strong>What still applies:</strong> Reachability (Step 4) — the channel must be physically deliverable. Marketing Consent (Step 3), Retail Suppression (Step 1), Format Suppression (Step 2), and Channel Unsubscribe (Step 5) — whether these apply to transactionals is subject to the approval workflow design (OI-6, currently TBD). The current working assumption is that transactional delivery is always-on for valid, consented, reachable customers. <strong>Classification protection:</strong> Transactional classification requires an approval workflow to prevent abuse (promotional campaigns being mis-classified as transactional to bypass governance).'}
+},
+
+]; // end SCENARIOS
+
+// ── Render Functions ────────────────────────────────────────────────────────
+
+function bkBadge(bk) {
+  return `<span class="bucket-badge bk-${bk.toLowerCase()}">${bk}</span>`;
+}
+
+function resultBadge(r) {
+  const map = {
+    pass: ['rb-pass','✓ PASS'],
+    terminal: ['rb-terminal','✗ TERMINAL'],
+    defer: ['rb-defer','⏸ DEFER'],
+    skip: ['rb-skip','— SKIP'],
+    send: ['rb-send','→ SEND'],
+  };
+  const [cls, label] = map[r] || ['rb-skip','?'];
+  return `<span class="result-badge ${cls}">${label}</span>`;
+}
+
+function rowClass(r) {
+  return {pass:'row-pass', terminal:'row-terminal', defer:'row-defer', skip:'row-skip', send:'row-send'}[r] || '';
+}
+
+function renderPipeline(sc) {
+  if (sc.transactional) {
+    return `<div class="txn-bypass-banner">
+      <div class="txn-bypass-icon">⚡</div>
+      <div class="txn-bypass-title">GOVERNANCE PIPELINE BYPASSED</div>
+      <div class="txn-bypass-desc">Campaign type = TRANSACTIONAL. Steps 1–18 are not evaluated.<br>Message dispatched immediately at P0 priority.<br><br>
+      Caps bypassed: B1 Volume Caps · B2 Retail Frequency Caps · B3 Format Frequency Caps<br>
+      Cooldowns bypassed: B3 Format Cooldown · B2 Cross-Format Cooldown · B5 Global Cooldown<br>
+      Timing bypassed: B1 Quiet Time<br><br>
+      <strong style="color:#6090e0">Eligibility gates (Steps 1–5) applicability to transactionals: subject to approval workflow design (OI-6).</strong>
+      </div>
+    </div>`;
+  }
+
+  // Build full 18 steps from scenario's step data
+  const stepMap = {};
+  (sc.steps||[]).forEach(s => stepMap[s.n] = s);
+
+  // Find first blocking step
+  let firstBlock = null;
+  for (let i=1; i<=18; i++) {
+    const s = stepMap[i];
+    if (s && (s.r==='terminal' || s.r==='defer')) { firstBlock = i; break; }
+  }
+
+  let rows = '';
+  let allPass = (firstBlock===null);
+
+  for (let i=1; i<=18; i++) {
+    const def = STEPS[i-1];
+    const s = stepMap[i] || {};
+    let res = s.r || 'pass';
+    if (!s.r && firstBlock && i > firstBlock) res = 'skip';
+
+    const overridableMark = def.ov ? '<span style="font-size:10px;color:#9060d0;margin-left:4px;" title="Overridable by Time Sensitive Toggle">★ OV</span>' : '';
+
+    rows += `<tr class="${rowClass(res)}">
+      <td class="step-num">Step ${i}</td>
+      <td>${bkBadge(def.bk)}</td>
+      <td>
+        <div class="rule-name">${def.rule}${overridableMark}</div>
+        ${s.note ? `<div class="rule-note">${s.note}</div>` : ''}
+      </td>
+      <td><span class="check-value">${s.v||'—'}</span></td>
+      <td>${resultBadge(res)}</td>
+    </tr>`;
+  }
+
+  // Add SEND row if all pass
+  if (allPass) {
+    rows += `<tr class="row-send send-row">
+      <td class="step-num">→</td>
+      <td colspan="3"><strong>✓ ALL CHECKS PASSED → DISPATCH</strong></td>
+      <td>${resultBadge('send')}</td>
+    </tr>`;
+  }
+
+  return `<div class="pipeline-wrap">
+    <div class="section-header">21-Step Evaluation Pipeline</div>
+    <table class="pipeline-table">
+      <thead><tr>
+        <th>Step</th><th>Bucket</th><th>Rule</th><th>Value Checked</th><th>Result</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="callout co-rule" style="margin-top:8px;">
+      ★ OV = Overridable by Time Sensitive Override (Steps 12–15 only) · Hard Blocks (Steps 1–11, 16–18) cannot be overridden
+    </div>
+  </div>`;
+}
+
+function renderQueue(q) {
+  if (!q) return '';
+  let events = '';
+  q.events.forEach((ev, idx) => {
+    const isLast = idx === q.events.length-1;
+    const alertHtml = ev.alert ? `<span class="q-alert ${ev.alert}">${
+      ev.alert==='qa-send'?'→ MESSAGE SENT':
+      ev.alert==='qa-flush'?'→ FLUSHED':
+      ev.alert==='qa-terminal'?'→ TERMINAL BLOCK':
+      ev.alert==='qa-event'?'→ STATE CHANGE':'→'
+    }</span>` : '';
+    events += `<div class="q-event">
+      <div class="q-connector">
+        <div class="q-dot ${ev.dot}"></div>
+        ${!isLast ? `<div class="q-line ${ev.line}"></div>` : ''}
+      </div>
+      <div class="q-body">
+        <div class="q-time">${ev.time}</div>
+        <div class="q-title">${ev.title}</div>
+        ${ev.desc ? `<div class="q-desc">${ev.desc}</div>` : ''}
+        ${ev.code ? `<code class="q-code">${ev.code}</code>` : ''}
+        ${alertHtml}
+      </div>
+    </div>`;
+  });
+
+  const noteHtml = q.reevalNote ? `<div class="callout co-warn" style="margin-top:12px;">${q.reevalNote}</div>` : '';
+
+  return `<div class="queue-section">
+    <div class="queue-section-title">Queue Lifecycle</div>
+    <div class="queue-timeline">${events}</div>
+    ${noteHtml}
+  </div>`;
+}
+
+function renderDual(dual) {
+  if (!dual) return '';
+  return `<div class="section-header" style="margin-top:0">Time Sensitive Override — Dual Outcome</div>
+  <div class="dual-grid">
+    <div class="dual-card dual-on">
+      <div class="dual-header">🔴 ${dual.on.title}</div>
+      <div class="dual-body">${dual.on.body}<br><br><code class="dual-code">${dual.on.code}</code></div>
+    </div>
+    <div class="dual-card dual-off">
+      <div class="dual-header">🟢 ${dual.off.title}</div>
+      <div class="dual-body">${dual.off.body}<br><br><code class="dual-code">${dual.off.code}</code></div>
+    </div>
+  </div>`;
+}
+
+function renderOutcome(oc) {
+  const codeSpan = oc.code ? '<span class="outcome-code">' + oc.code + '</span>' : '';
+  return `<div class="outcome-box ${oc.cls}">
+    <div class="outcome-top">
+      <div class="outcome-icon">${oc.icon}</div>
+      <div>
+        <div class="outcome-type">${oc.type} ${codeSpan}</div>
+      </div>
+    </div>
+    <div class="outcome-desc">${oc.desc}</div>
+  </div>`;
+}
+
+function renderPipelineRef() {
+  let rows = STEPS.map(s => `<tr>
+    <td style="font-family:var(--mono);font-size:11px;color:#7090b0">${s.n}</td>
+    <td>${bkBadge(s.bk)}</td>
+    <td style="color:var(--text)">${s.rule}</td>
+    <td>${s.type === 'terminal' ? '<span class="ref-hard">HARD BLOCK</span>' : '<span style="color:#d08020;font-family:var(--mono);font-size:10px">DEFER/QUEUE</span>'}</td>
+    <td>${s.ov ? '<span class="ref-overridable">✓ YES</span>' : '<span style="color:#4a5a7a;font-size:10px;font-family:var(--mono)">—</span>'}</td>
+  </tr>`).join('');
+  return `<div class="ref-panel">
+    <div class="ref-panel-header" onclick="toggleRef(this)">
+      <span class="ref-panel-title">📋 Pipeline Reference — 18 Steps in Evaluation Order</span>
+      <span class="ref-chevron" id="ref-chevron">▼</span>
+    </div>
+    <div class="ref-content" id="ref-content">
+      <table class="ref-table">
+        <thead><tr><th>#</th><th>Bucket</th><th>Rule</th><th>Fail Action</th><th>TS Override?</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="padding:10px 12px;font-size:11px;color:var(--text-dim);border-top:1px solid var(--border);">
+        Evaluation order: B5 → B4 → B3 → B2 → B1 &nbsp;·&nbsp; Hard blocks first, overridables last within each bucket &nbsp;·&nbsp; Queue re-evaluation always restarts from Step 1
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleRef(el) {
+  const content = document.getElementById('ref-content');
+  const chevron = document.getElementById('ref-chevron');
+  content.classList.toggle('open');
+  chevron.classList.toggle('open');
+}
+
+function renderScenario(sc) {
+  const ctxHtml = sc.ctx.map(c => `<div class="ctx-chip"><div class="ctx-chip-label">${c.label}</div><div class="ctx-chip-value">${c.value}</div></div>`).join('');
+  const stateHtml = (sc.state||[]).map(s => `<div class="state-row"><div class="state-dot ${s.d}"></div><div class="state-text"><div class="state-label">${s.l}</div><div class="state-value">${s.v}</div></div></div>`).join('');
+
+  return `
+    ${renderPipelineRef()}
+    <div class="scenario-head">
+      <div class="scenario-eyebrow">
+        <span class="scenario-id">${sc.id}</span>
+        <span class="nav-item-tag ${sc.tag}">${sc.tagLabel}</span>
+      </div>
+      <div class="scenario-title">${sc.title}</div>
+      <div class="scenario-subtitle">${sc.subtitle}</div>
+    </div>
+
+    <div class="ctx-grid">${ctxHtml}</div>
+
+    ${sc.state && sc.state.length ? `<div class="section-header">Customer State at T₀</div><div class="state-grid">${stateHtml}</div>` : ''}
+
+    ${renderPipeline(sc)}
+    ${renderQueue(sc.queue)}
+    ${renderDual(sc.dual)}
+    ${renderOutcome(sc.outcome)}
+  `;
+}
+
+// ── Sidebar ─────────────────────────────────────────────────────────────────
+
+function buildSidebar() {
+  const groups = [
+    {label:'Happy Path', ids:['S01']},
+    {label:'Terminal Blocks (Steps 1–5)', ids:['S02','S03','S04','S05','S06']},
+    {label:'Queue Scenarios', ids:['S07','S08','S09','S10','S11']},
+    {label:'Cooldown & Quiet Time', ids:['S12','S13','S14','S15']},
+    {label:'Volume & Throughput', ids:['S16','S17']},
+    {label:'Special Paths', ids:['S18']},
+  ];
+
+  let html = '';
+  groups.forEach(g => {
+    html += `<div class="sidebar-section"><div class="sidebar-section-label">${g.label}</div></div>`;
+    g.ids.forEach(id => {
+      const sc = SCENARIOS.find(s=>s.id===id);
+      if (!sc) return;
+      html += `<div class="nav-item" id="nav-${id}" onclick="loadScenario('${id}')">
+        <span class="nav-item-id">${id}</span>
+        <div class="nav-item-body">
+          <div class="nav-item-title">${sc.title}</div>
+          <div><span class="nav-item-tag ${sc.tag}">${sc.tagLabel}</span></div>
+        </div>
+      </div>`;
+    });
+  });
+  document.getElementById('sidebar').innerHTML = html;
+}
+
+function loadScenario(id) {
+  // Update active nav
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const navEl = document.getElementById('nav-'+id);
+  if (navEl) { navEl.classList.add('active'); navEl.scrollIntoView({block:'nearest'}); }
+
+  const sc = SCENARIOS.find(s=>s.id===id);
+  if (!sc) return;
+  document.getElementById('content').innerHTML = renderScenario(sc);
+  document.getElementById('content').scrollTop = 0;
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+buildSidebar();
+loadScenario('S01');
+</script>
+</body>
+</html>
